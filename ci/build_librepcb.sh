@@ -36,7 +36,7 @@ cmake \
   -DLIBREPCB_BUILD_AUTHOR="$LIBREPCB_BUILD_AUTHOR" \
   ${CMAKE_OPTIONS-} \
   ..
-ninja
+ninja -j$(nproc)
 ninja install
 popd
 
