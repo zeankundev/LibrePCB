@@ -96,7 +96,7 @@ jobs:
         run: docker exec -w C:/work/libs/librepcb/rust-core ci cargo test --features=fail-on-warnings
         if: ${{ (steps.build.outcome == 'success') && (!cancelled()) }}
       - name: Run LibrePCB Unittests
-        run: docker exec ci build\\tests\\unittests\\librepcb-unittests.exe
+        run: docker exec ci build\tests\unittests\librepcb-unittests.exe
         if: ${{ (steps.build.outcome == 'success') && (!cancelled()) }}
       - name: Run LibrePCB-CLI Functional Tests
         run: docker exec ci uv --directory ./tests/cli run --no-dev pytest -vvv --librepcb-executable="../../build/install/bin/librepcb-cli.exe"
@@ -126,6 +126,13 @@ jobs:
         if: ${{ (steps.build.outcome == 'success') && (!cancelled()) && (github.event_name == 'push') && env.UPLOAD_URL }}
         env:
           UPLOAD_URL: ${{ secrets.UPLOAD_URL }}  # Required to use it in 'if' condition
+      - name: Upload Portable Zip Package Artifact
+        uses: actions/upload-artifact@v7
+        if: ${{ (steps.build.outcome == 'success') && (!cancelled()) }}
+        with:
+          name: librepcb-portable-windows-x86_64
+          path: build/*.zip
+          if-no-files-found: error
       - name: Upload Test Results
         uses: actions/upload-artifact@v7
         if: ${{ (steps.build.outcome == 'success') && (!cancelled()) }}
