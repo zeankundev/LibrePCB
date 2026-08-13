@@ -123,19 +123,38 @@ jobs:
           -e UPLOAD_PASS="${{ secrets.UPLOAD_PASS }}"
           -e UPLOAD_SIGN_KEY="${{ secrets.UPLOAD_SIGN_KEY }}"
           ci bash ./ci/upload_artifacts.sh
-        if: ${{ (steps.build.outcome == 'success') && (!cancelled()) && (github.event_name == 'push') && env.UPLOAD_URL }}
         env:
           UPLOAD_URL: ${{ secrets.UPLOAD_URL }}  # Required to use it in 'if' condition
+      - name: Collect zip artifacts from container
+        if: ${{ always() && (steps.build.outcome == 'success') && (!cancelled()) }}
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path build\artifacts | Out-Null
+
+          # 1) Try common workspace locations first (already mounted)
+          docker exec ci bash -lc "find /c/work/build -type f -name '*.zip' -print" 2>$null
+          docker exec ci bash -lc "cp -f /c/work/build/*.zip /c/work/build/artifacts/ 2>/dev/null || true"
+          docker exec ci bash -lc "find /c/work/build -type f -path '*/artifacts/*.zip' -print" 2>$null
+
+          # 2) Fallback: search entire container and copy out with docker cp
+          $zips = docker exec ci bash -lc "find / -type f -name '*.zip' 2>/dev/null | tr -d '\r'" | Where-Object { $_ -and $_.Trim() -ne "" }
+          foreach ($zip in $zips) {
+            $name = [System.IO.Path]::GetFileName($zip.Trim())
+            docker cp "ci:$($zip.Trim())" "build/artifacts/$name"
+          }
+
+          Write-Host "Final zip files visible on host:"
+          Get-ChildItem -Path build\artifacts -Filter *.zip -Recurse -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
+
       - name: Upload Portable Zip Package Artifact
         uses: actions/upload-artifact@v7
-        if: ${{ (steps.build.outcome == 'success') && (!cancelled()) }}
+        if: ${{ always() && (steps.build.outcome == 'success') && (!cancelled()) }}
         with:
           name: librepcb-portable-windows-x86_64
-          path: build/*.zip
+          path: build/artifacts/*.zip
           if-no-files-found: error
       - name: Upload Test Results
         uses: actions/upload-artifact@v7
-        if: ${{ (steps.build.outcome == 'success') && (!cancelled()) }}
         with:
           name: ${{ github.job }}
           if-no-files-found: ignore
