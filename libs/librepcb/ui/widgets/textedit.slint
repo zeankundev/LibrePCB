@@ -46,6 +46,7 @@ export component TextEdit inherits Rectangle {
     preferred-width: max(placeholder-txt.preferred-width, edt.preferred-width) + (2 * view.x);
     preferred-height: max(placeholder-txt.preferred-height, edt.preferred-height) + (2 * view.y);
     horizontal-stretch: 1;
+    border-radius: 5px;
     background: {
         if !enabled {
             Data.theme.control-disabled

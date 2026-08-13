@@ -45,7 +45,10 @@ component SideBarButton inherits Rectangle {
             Data.theme.window  // Not transparent because of the emblem color.
         }
     };
+
+    width: 32px;
     height: self.width;
+    border-radius: 5px;
 
     // Accessibility
     accessible-role: button;
@@ -58,9 +61,11 @@ component SideBarButton inherits Rectangle {
     }
 
     if checked: Rectangle {
-        x: 0px;
+        x: -5px;
         width: 3px;
+        height: 5px;
         background: Data.theme.accent;
+        border-radius: 5px;
     }
 
     ta := TouchArea {
@@ -170,7 +175,9 @@ export component SideBar {
     }
 
     VerticalLayout {
-        spacing: 0px;
+        spacing: 5px;
+        padding: 5px;
+        padding-left: 8px;
 
         home-btn := SideBarButton {
             icon: @image-url("../../bootstrap-icons/icons/house-fill.svg");

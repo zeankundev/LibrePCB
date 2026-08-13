@@ -22,7 +22,7 @@ component DonateButton inherits Button {
 
 export component HomeTab inherits Tab {
     in property <int> section-index;
-    property <bool> compact-layout: self.width < 350px;
+    in property <bool> compact-layout;
 
     show-watermark: project-preview-img.source.width == 0;
 
@@ -40,7 +40,7 @@ export component HomeTab inherits Tab {
 
         HorizontalLayout {
             property <image> image: @image-url("../../../img/video-tutorial.png");
-            property <length> image-width-available: parent.width - buttons-l.preferred-width - 2 * parent.padding;
+            property <length> image-width-available: 240px;
 
             spacing: 10px;
 
@@ -64,7 +64,6 @@ export component HomeTab inherits Tab {
                 spacing: 10px;
 
                 video-tutorials-btn := Button {
-                    width: compact-layout ? (root.width - 2 * l.padding) : self.preferred-width;
                     horizontal-stretch: 1;
                     text: @tr("Video Tutorials");
                     status-tip: @tr("Open video tutorials in the web browser");
@@ -77,7 +76,6 @@ export component HomeTab inherits Tab {
                 }
 
                 user-manual-btn := Button {
-                    width: compact-layout ? (root.width - 2 * l.padding) : self.preferred-width;
                     text: @tr("User Manual & Getting Started Guide");
                     status-tip: Cmd.documentation-online.status-tip;
                     icon: @image-url("../../font-awesome/svgs/solid/book.svg");
@@ -89,7 +87,6 @@ export component HomeTab inherits Tab {
                 }
 
                 support-btn := Button {
-                    width: compact-layout ? (root.width - 2 * l.padding) : self.preferred-width;
                     text: Cmd.support.text;
                     status-tip: Cmd.support.status-tip;
                     icon: @image-url("../../font-awesome/svgs/regular/comments.svg");
@@ -101,7 +98,6 @@ export component HomeTab inherits Tab {
                 }
 
                 shortcuts-btn := Button {
-                    width: compact-layout ? (root.width - 2 * l.padding) : self.preferred-width;
                     text: Cmd.keyboard-shortcuts-reference.text;
                     status-tip: Cmd.keyboard-shortcuts-reference.status-tip;
                     icon: @image-url("../../font-awesome/svgs/solid/keyboard.svg");
@@ -146,8 +142,8 @@ export component HomeTab inherits Tab {
         preview-flickable := Flickable {
             vertical-stretch: 1;
             width: 100%;
-            content-width: self.width;
-            content-height: project-preview-img.height;
+            viewport-width: self.width;
+            viewport-height: project-preview-img.height;
             interactive: project-preview-img.source.width > 0;
 
             project-preview-img := Image {

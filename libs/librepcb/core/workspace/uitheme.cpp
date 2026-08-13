@@ -97,7 +97,7 @@ const UiTheme& UiTheme::light() noexcept {
       "#fffbc5",  // tooltip
       "#b9b9b9",  // tooltip-border
       "#3a3a3a",  // tooltip-text
-      "#29d682",  // accent
+      "#1b50a0",  // accent
       "#000000",  // accent-text
       "#00ccff",  // info
       "#000000",  // info-text

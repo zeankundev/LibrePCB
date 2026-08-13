@@ -46,3 +46,5 @@ __pycache__/
 
 # CMake
 CMakeLists.txt.user
+
+.vs/

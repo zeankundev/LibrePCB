@@ -1,9 +1,9 @@
-import "../../../share/librepcb/fonts/NotoSans-Light.ttf";
-import "../../../share/librepcb/fonts/NotoSans-LightItalic.ttf";
-import "../../../share/librepcb/fonts/NotoSans-Regular.ttf";
-import "../../../share/librepcb/fonts/NotoSans-Italic.ttf";
-import "../../../share/librepcb/fonts/NotoSans-Bold.ttf";
-import "../../../share/librepcb/fonts/NotoSans-BoldItalic.ttf";
+import "../../../share/librepcb/fonts/HarmonyOS_Sans_Light.ttf";
+import "../../../share/librepcb/fonts/HarmonyOS_SansItalic_Light.ttf";
+import "../../../share/librepcb/fonts/HarmonyOS_Sans_Regular.ttf";
+import "../../../share/librepcb/fonts/HarmonyOS_SansItalic_Regular.ttf";
+import "../../../share/librepcb/fonts/HarmonyOS_Sans_Bold.ttf";
+import "../../../share/librepcb/fonts/HarmonyOS_SansItalic_Bold.ttf";
 import "../../../share/librepcb/fonts/NotoSansMono-Regular.ttf";
 
 import { MainMenuBar } from "mainmenubar.slint";
@@ -35,7 +35,7 @@ export component AppWindow inherits Window {
     title: Data.window-title;
     background: Data.theme.window;
     icon: @image-url("../../../img/app/librepcb.svg");
-    default-font-family: "Noto Sans";
+    default-font-family: "HarmonyOS Sans";
     preferred-width: 1024px;
     preferred-height: 768px;
     forward-focus: fs;
@@ -95,7 +95,7 @@ export component AppWindow inherits Window {
             x: 0px;
             y: menubar.height + 1px;
             z: 90; // For the tooltips.
-            width: ((root.width <= 1200px) || (root.height <= 600px)) ? 35px : 45px;
+            width: 44px;
             height: parent.height - self.y - statusbar.height;
         }
 

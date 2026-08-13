@@ -161,6 +161,7 @@ component ProjectSection inherits Rectangle {
 
     VerticalLayout {
         header-ta := TouchArea {
+            width: 100%;
             z: 10;  // For the tooltip.
 
             header := PanelHeader {
@@ -272,9 +273,11 @@ component LibrarySection inherits Rectangle {
 
     VerticalLayout {
         header-ta := TouchArea {
+            width: 100%;
             z: 10;  // For the tooltip.
 
             header := PanelHeader {
+                width: parent.width;
                 title: library.name.to-uppercase();
                 highlight: library-index == Data.current-library-index;
 

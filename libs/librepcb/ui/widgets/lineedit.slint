@@ -103,6 +103,7 @@ export component LineEdit inherits Rectangle {
         }
     };
     border-width: frameless ? 0 : 1px;
+    border-radius: 5px;
     forward-focus: edt;
 
     // Accessibility
@@ -205,6 +206,7 @@ export component LineEdit inherits Rectangle {
 
             Rectangle {
                 width: 5px;
+                border-radius: 5px;
             }
 
             if enabled && (!read-only) && show-clear-button: Rectangle {
