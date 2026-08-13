@@ -198,6 +198,16 @@ TEST_F(ProjectTest, testCreateCloseOpen) {
   EXPECT_TRUE(mProjectDir.getPathTo("project/settings.lp").isExistingFile());
   EXPECT_TRUE(mProjectDir.getPathTo("circuit/circuit.lp").isExistingFile());
   EXPECT_TRUE(mProjectDir.getPathTo("circuit/erc.lp").isExistingFile());
+  const FilePath strokeFontDir =
+      mProjectDir.getPathTo("resources/fontobene");
+  const FilePath defaultStrokeFontDir =
+      Application::getResourcesDir().getPathTo("fontobene");
+  EXPECT_EQ(FileUtils::readFile(
+                defaultStrokeFontDir.getPathTo("ansifont.bene")),
+            FileUtils::readFile(strokeFontDir.getPathTo("ansifont.bene")));
+  EXPECT_EQ(FileUtils::readFile(
+                defaultStrokeFontDir.getPathTo("newstroke.bene")),
+            FileUtils::readFile(strokeFontDir.getPathTo("newstroke.bene")));
 
   // open project again
   ProjectLoader loader;

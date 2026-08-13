@@ -545,8 +545,7 @@ std::unique_ptr<Project> Project::create(
   // Populate with stroke fonts.
   TransactionalDirectory fontobeneDir(*directory, "resources/fontobene");
   FilePath src = Application::getResourcesDir().getPathTo("fontobene");
-  foreach (const FilePath& fp,
-           FileUtils::getFilesInDirectory(src, {"*.bene"})) {
+  foreach (const FilePath& fp, FileUtils::getFilesInDirectory(src)) {
     if (fp.getSuffix() == "bene") {
       fontobeneDir.write(fp.getFilename(), FileUtils::readFile(fp));
     }
