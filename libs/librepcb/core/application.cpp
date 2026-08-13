@@ -260,7 +260,7 @@ const StrokeFont& Application::getDefaultStrokeFont() noexcept {
 }
 
 QString Application::getDefaultStrokeFontName() noexcept {
-  return QStringLiteral("newstroke.bene");
+  return QStringLiteral("ansifont.bene");
 }
 
 /*******************************************************************************
