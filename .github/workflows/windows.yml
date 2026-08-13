@@ -29,6 +29,7 @@ jobs:
             ccache-${{ github.job }}-refs/heads/master
             ccache-${{ github.job }}
           path: build/.ccache-dir
+
       - id: restore_cargo
         name: Restore .cargo
         uses: actions/cache/restore@v5
@@ -56,6 +57,7 @@ jobs:
           if ($dockerState.Status -ne "Running") {
             Start-Service -Name "docker"
           }
+
       - name: Start Docker Container
         run: >
           docker run -d -t --name ci -w C:/work
@@ -69,6 +71,7 @@ jobs:
           -e CARGO_HOME="C:/work/build/.cargo-home"
           -e CARGO_INCREMENTAL="0"
           "ghcr.io/librepcb/docker-librepcb-dev@sha256:${{ env.IMAGE_DIGEST }}"
+
       - name: Print Environment
         run: docker exec ci bash ./ci/print_environment.sh
 
@@ -79,6 +82,7 @@ jobs:
           -e UV_INDEX_SLINT_PRIVATE_USERNAME="${{ secrets.UV_INDEX_SLINT_PRIVATE_USERNAME }}"
           -e UV_INDEX_SLINT_PRIVATE_PASSWORD="${{ secrets.UV_INDEX_SLINT_PRIVATE_PASSWORD }}"
           ci bash ./ci/install_python_packages.sh
+
       - name: Print New Environment  # Print again since it has been modified
         run: docker exec ci bash ./ci/print_environment.sh
 
@@ -86,24 +90,46 @@ jobs:
       - id: build
         name: Build LibrePCB
         run: docker exec ci bash ./ci/build_librepcb.sh
+
       - name: Build Archive
         run: docker exec ci bash ./ci/build_windows_archive.sh
+
       - name: Build Installer
         run: docker exec ci bash ./ci/build_windows_installer.sh
+
+      # Create portable ZIP from produced portable directory
+      - name: Create Portable ZIP
+        if: ${{ always() && (steps.build.outcome == 'success') && (!cancelled()) }}
+        run: >
+          docker exec ci bash -lc
+          "set -euo pipefail;
+          export PATH='/usr/bin:$PATH';
+          mkdir -p ./artifacts/nightly_builds;
+          PORTABLE_DIR='./artifacts/nightly_builds/librepcb-nightly-windows-x86_64';
+          ZIP_PATH='./artifacts/nightly_builds/librepcb-portable-nightly-windows-x86_64.zip';
+          test -d \"$PORTABLE_DIR\";
+          rm -f \"$ZIP_PATH\";
+          cd ./artifacts/nightly_builds;
+          7z a -tzip -mx=9 \"librepcb-portable-nightly-windows-x86_64.zip\" \"librepcb-nightly-windows-x86_64\";
+          ls -la \"./librepcb-portable-nightly-windows-x86_64.zip\""
 
       # Test
       - name: Run rust-core tests
         run: docker exec -w C:/work/libs/librepcb/rust-core ci cargo test --features=fail-on-warnings
         if: ${{ (steps.build.outcome == 'success') && (!cancelled()) }}
+
       - name: Run LibrePCB Unittests
         run: docker exec ci build\tests\unittests\librepcb-unittests.exe
         if: ${{ (steps.build.outcome == 'success') && (!cancelled()) }}
+
       - name: Run LibrePCB-CLI Functional Tests
         run: docker exec ci uv --directory ./tests/cli run --no-dev pytest -vvv --librepcb-executable="../../build/install/bin/librepcb-cli.exe"
         if: ${{ (steps.build.outcome == 'success') && (!cancelled()) }}
+
       - name: Run LibrePCB Functional Tests
         run: docker exec ci uv --directory ./tests/funq run --no-dev pytest -vvv --librepcb-executable="../../build/install/bin/librepcb.exe" --reruns 5 --reruns-delay 10
         if: ${{ (steps.build.outcome == 'success') && (!cancelled()) }}
+
       - name: Run LibrePCB UI Tests
         run: docker exec ci uv --directory ./tests/ui run --no-dev pytest -vvv --librepcb-executable="../../build/install/bin/librepcb.exe"
         if: ${{ (steps.build.outcome == 'success') && (!cancelled()) && env.UV_INDEX_SLINT_PRIVATE_PASSWORD }}
@@ -111,10 +137,11 @@ jobs:
           UV_INDEX_SLINT_PRIVATE_USERNAME: ${{ secrets.UV_INDEX_SLINT_PRIVATE_USERNAME }}
           UV_INDEX_SLINT_PRIVATE_PASSWORD: ${{ secrets.UV_INDEX_SLINT_PRIVATE_PASSWORD }}
 
-      # Upload Artifacts
+      # Upload Artifacts (run even if tests failed, but only if build succeeded)
       - name: Tar Artifacts
         run: docker exec ci bash ./ci/tar_artifacts.sh
-        if: ${{ (steps.build.outcome == 'success') && (!cancelled()) }}
+        if: ${{ always() && (steps.build.outcome == 'success') && (!cancelled()) }}
+
       - name: Upload Artifacts
         run: >
           docker exec
@@ -123,38 +150,29 @@ jobs:
           -e UPLOAD_PASS="${{ secrets.UPLOAD_PASS }}"
           -e UPLOAD_SIGN_KEY="${{ secrets.UPLOAD_SIGN_KEY }}"
           ci bash ./ci/upload_artifacts.sh
+        if: ${{ always() && (steps.build.outcome == 'success') && (!cancelled()) }}
         env:
           UPLOAD_URL: ${{ secrets.UPLOAD_URL }}  # Required to use it in 'if' condition
-      - name: Collect zip artifacts from container
-        if: ${{ always() && (steps.build.outcome == 'success') && (!cancelled()) }}
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path build\artifacts | Out-Null
-
-          # 1) Try common workspace locations first (already mounted)
-          docker exec ci bash -lc "find /c/work/build -type f -name '*.zip' -print" 2>$null
-          docker exec ci bash -lc "cp -f /c/work/build/*.zip /c/work/build/artifacts/ 2>/dev/null || true"
-          docker exec ci bash -lc "find /c/work/build -type f -path '*/artifacts/*.zip' -print" 2>$null
-
-          # 2) Fallback: search entire container and copy out with docker cp
-          $zips = docker exec ci bash -lc "find / -type f -name '*.zip' 2>/dev/null | tr -d '\r'" | Where-Object { $_ -and $_.Trim() -ne "" }
-          foreach ($zip in $zips) {
-            $name = [System.IO.Path]::GetFileName($zip.Trim())
-            docker cp "ci:$($zip.Trim())" "build/artifacts/$name"
-          }
-
-          Write-Host "Final zip files visible on host:"
-          Get-ChildItem -Path build\artifacts -Filter *.zip -Recurse -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
 
       - name: Upload Portable Zip Package Artifact
         uses: actions/upload-artifact@v7
         if: ${{ always() && (steps.build.outcome == 'success') && (!cancelled()) }}
         with:
           name: librepcb-portable-windows-x86_64
-          path: build/artifacts/*.zip
+          path: artifacts/nightly_builds/librepcb-portable-nightly-windows-x86_64.zip
           if-no-files-found: error
+
+      - name: Upload Installer EXE Artifact
+        uses: actions/upload-artifact@v7
+        if: ${{ always() && (steps.build.outcome == 'success') && (!cancelled()) }}
+        with:
+          name: librepcb-installer-windows-x86_64
+          path: artifacts/nightly_builds/librepcb-installer-nightly-windows-x86_64.exe
+          if-no-files-found: error
+
       - name: Upload Test Results
         uses: actions/upload-artifact@v7
+        if: ${{ always() && (steps.build.outcome == 'success') && (!cancelled()) }}
         with:
           name: ${{ github.job }}
           if-no-files-found: ignore
@@ -168,7 +186,8 @@ jobs:
         with:
           key: ${{ steps.restore_ccache.outputs.cache-primary-key }}
           path: build/.ccache-dir
-        if: ${{ steps.restore_ccache && (!cancelled()) }}
+        if: ${{ always() && steps.restore_ccache && (!cancelled()) }}
+
       - name: Cache .cargo
         uses: actions/cache/save@v5
         with:
@@ -180,4 +199,4 @@ jobs:
             ./build/.cargo-home/git/db/
             ./build/cargo/
             ./libs/librepcb/rust-core/target/
-        if: ${{ steps.restore_cargo && (!cancelled()) }}
+        if: ${{ always() && steps.restore_cargo && (!cancelled()) }}
