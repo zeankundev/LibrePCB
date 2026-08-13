@@ -8,7 +8,7 @@ name = Allegro ANSI Font
 description = Converted from Cadence Allegro ansifont.dat
 version = 1.0.0
 license = CC0-1.0
-letter_spacing = 2,5
+letter_spacing = 2.5
 line_spacing = 16
 
 ---
