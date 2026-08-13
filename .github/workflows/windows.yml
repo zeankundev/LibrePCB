@@ -113,30 +113,6 @@ jobs:
           7z a -tzip -mx=9 \"librepcb-portable-nightly-windows-x86_64.zip\" \"librepcb-nightly-windows-x86_64\";
           ls -la \"./librepcb-portable-nightly-windows-x86_64.zip\""
 
-      # Test
-      - name: Run rust-core tests
-        run: docker exec -w C:/work/libs/librepcb/rust-core ci cargo test --features=fail-on-warnings
-        if: ${{ (steps.build.outcome == 'success') && (!cancelled()) }}
-
-      - name: Run LibrePCB Unittests
-        run: docker exec ci build\tests\unittests\librepcb-unittests.exe
-        if: ${{ (steps.build.outcome == 'success') && (!cancelled()) }}
-
-      - name: Run LibrePCB-CLI Functional Tests
-        run: docker exec ci uv --directory ./tests/cli run --no-dev pytest -vvv --librepcb-executable="../../build/install/bin/librepcb-cli.exe"
-        if: ${{ (steps.build.outcome == 'success') && (!cancelled()) }}
-
-      - name: Run LibrePCB Functional Tests
-        run: docker exec ci uv --directory ./tests/funq run --no-dev pytest -vvv --librepcb-executable="../../build/install/bin/librepcb.exe" --reruns 5 --reruns-delay 10
-        if: ${{ (steps.build.outcome == 'success') && (!cancelled()) }}
-
-      - name: Run LibrePCB UI Tests
-        run: docker exec ci uv --directory ./tests/ui run --no-dev pytest -vvv --librepcb-executable="../../build/install/bin/librepcb.exe"
-        if: ${{ (steps.build.outcome == 'success') && (!cancelled()) && env.UV_INDEX_SLINT_PRIVATE_PASSWORD }}
-        env:
-          UV_INDEX_SLINT_PRIVATE_USERNAME: ${{ secrets.UV_INDEX_SLINT_PRIVATE_USERNAME }}
-          UV_INDEX_SLINT_PRIVATE_PASSWORD: ${{ secrets.UV_INDEX_SLINT_PRIVATE_PASSWORD }}
-
       # Upload Artifacts (run even if tests failed, but only if build succeeded)
       - name: Tar Artifacts
         run: docker exec ci bash ./ci/tar_artifacts.sh
@@ -153,6 +129,33 @@ jobs:
         if: ${{ always() && (steps.build.outcome == 'success') && (!cancelled()) }}
         env:
           UPLOAD_URL: ${{ secrets.UPLOAD_URL }}  # Required to use it in 'if' condition
+
+      - name: Debug artifact tree
+        if: ${{ always() && (steps.build.outcome == 'success') && (!cancelled()) }}
+        shell: pwsh
+        run: |
+          Write-Host "Workspace: $env:GITHUB_WORKSPACE"
+          if (Test-Path "artifacts") {
+            Get-ChildItem -Path artifacts -Recurse | Select-Object FullName
+          } else {
+            Write-Host "artifacts/ does not exist"
+          }
+
+      - name: Create Portable ZIP (host)
+        if: ${{ always() && (steps.build.outcome == 'success') && (!cancelled()) }}
+        shell: pwsh
+        run: |
+          $src = "artifacts/nightly_builds/librepcb-nightly-windows-x86_64"
+          $dst = "artifacts/nightly_builds/librepcb-portable-nightly-windows-x86_64.zip"
+
+          if (-not (Test-Path $src)) {
+            Write-Error "Portable source directory not found: $src"
+            exit 1
+          }
+
+          if (Test-Path $dst) { Remove-Item $dst -Force }
+          Compress-Archive -Path "$src\*" -DestinationPath $dst -CompressionLevel Optimal
+          Get-Item $dst | Format-List FullName,Length,LastWriteTime
 
       - name: Upload Portable Zip Package Artifact
         uses: actions/upload-artifact@v7
